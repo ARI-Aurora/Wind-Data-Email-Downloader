@@ -52,10 +52,7 @@ def createEmailInstance() -> mailer:
         return imap
     except OSError as e:
         logging.error("Could not connect to Email!")
-        try:
-            logging.error(str(e.errno) + " - " + errno.errorcode[e.errno])
-        except:
-            logging.error("Could not determine error code for OSERROR")
+        logging.error(str(e.errno) + " - " + os.strerror(e.errno))
         exit()
     except:
         logging.error("Something else went wrong!!")
@@ -65,7 +62,7 @@ def findInboxWithName(imap: mailer, folderName: str) -> List[str]:
     return data_boxes
 
 def downloadAttachmentsFrom(imap: mailer, sender: str, extension: str):
-    out_dir = '../wind_data_shr/ZIP' #output folder
+    out_dir = '/home/pi/wind_data_shr/ZIP' #output folder
     archive_folder = '(Wind_Archived)'
     data_boxes = findInboxWithName(imap, "Data")
     imap.search_for_messages(text='status@support.zephirlidar.com', area='from', folder=data_boxes)
@@ -97,16 +94,18 @@ def downloadAttachmentsFrom(imap: mailer, sender: str, extension: str):
                                 fp.write(part.get_payload(decode=True))
                                 fp.close()
                                 logging.debug(str(filename) + " saved.")
-                                processDownloadedZIPLidarFile(save_path)
-                                ## TODO: Move Email to 'Wind_Archive' Folder
-                                #imap.imap4.copy(emailid, archive_folder)
-                                imap.imap4.store(emailid, '+X-GM-LABELS', archive_folder)
-                                imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
-                                imap.imap4.expunge()
-                                #imap.imap4.store(emailid, 'FLAGS', '\\Deleted')
-                                logging.debug("Email Archived")
-                except AttributeError: # email_body is none!
-                    logging.debug("Email Data is Mostly Likely None Type...Skipping.")
+                            else:
+                                logging.debug(str(filename) + " File Already Downloaded")
+                            processDownloadedZIPLidarFile(save_path)
+                            ## TODO: Move Email to 'Wind_Archive' Folder
+                            #imap.imap4.copy(emailid, archive_folder)
+                            imap.imap4.store(emailid, '+X-GM-LABELS', archive_folder)
+                            imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
+                            imap.imap4.expunge()
+                            #imap.imap4.store(emailid, 'FLAGS', '\\Deleted')
+                            logging.debug("Email Archived")
+                except AttributeError as e: # email_body is none!
+                    logging.debug("Email Data is Mostly Likely None Type...Skipping." + str(e.errno) + " - " + os.strerror(e.errno))
 
 
 def cleanArchive(imap: mailer):
@@ -144,15 +143,15 @@ def processDownloadedZIPLidarFile(filePath: str):
     # Check FIle Type and Move accordinly
     extracted_type = filename.split(".")[-2]
     if extracted_type == "CSV":
-        shutil.unpack_archive(filePath,"../wind_data_shr/CSV/"+str(unit))
-        logging.debug(str(unit) + ": CSV moved to " + "../wind_data_shr/CSV/"+ str(unit))
+        shutil.unpack_archive(filePath,"/home/pi/wind_data_shr/CSV/"+str(unit))
+        logging.debug(str(unit) + ": CSV moved to " + "/home/pi/wind_data_shr/CSV/"+ str(unit))
     elif extracted_type == "ZPH":
-        shutil.unpack_archive(filePath,"../wind_data_shr/ZPH/"+str(unit))
-        logging.debug(str(unit) + ": ZPH moved to " + "../wind_data_shr/ZPH/"+ str(unit))
+        shutil.unpack_archive(filePath,"/home/pi/wind_data_shr/ZPH/"+str(unit))
+        logging.debug(str(unit) + ": ZPH moved to " + "/home/pi/wind_data_shr/ZPH/"+ str(unit))
     # Move Zip to unit ID Folder
     try:
-        shutil.move(filePath, "../wind_data_shr/ZIP/"+str(unit))
-        logging.debug(str(unit) + ": ZIP moved to " + "../wind_data_shr/ZIP/"+ str(unit))
+        shutil.move(filePath, "/home/pi/wind_data_shr/ZIP/"+str(unit))
+        logging.debug(str(unit) + ": ZIP moved to " + "/home/pi/wind_data_shr/ZIP/"+ str(unit))
     except shutil.Error as e:
         logging.debug("UTIL Error, Most likely file already exists: " + str(e.errno))
 
