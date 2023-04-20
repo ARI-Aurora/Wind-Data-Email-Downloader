@@ -1,31 +1,21 @@
 # Wind Data Email Downloader
 A tool to download ZX300, SymphoniePRO, and Environment Canada Data for Analysis.
 
-## Usage:
+# Usage:
 
 - The downloader requires an environment variable named 'WIND_GMAIL_PASS' to be set with an App password for the email you wish to download data from.
+- The downloader expects to run next to a samba file share named 'wind_data_shr' and so will attempt to move downloaded files into that folder structure.
 
-# Road Map:
+## Crontab Entry:
 
-- [ ] Add python virtual environment
-- [ ] Move keys to environment variables!!
+- The following entry calls the script everyday at 5am. 
+- The setup-downloader-and-run.sh script sets the WIND_GMAIL_PASS environment variable before calling the script.
 
+```0 5 * * * /home/pi/Documents/setup-downloader-and-run.sh python3 /home/pi/wind-data-downloader/data-email-downloader-test.py >> /home/pi/cron_output.log 2>&1```
 
-## Script Features
-- Add back some of the safety features from the library
-- Add the archiving feature (move downloaded emails to another folder)
-- Add data logging (Make log file appear on samba)
-- Create file structure. ZIPs, ZPH, and CSV folders
-- Detect file extension and move file accordinly
-- Detect from which device is returning data
-- Extract zip files
-- Add archive script that will go through the whole mainbox and pull out all the items from all time.
+# Next Steps
 
-## Recall Features
-- Add to cron
-- Add log file to cron
-
-## Docker
+## Docker? Containerize?
 - Create a basic compose file
 - Load python script
 - install samba
