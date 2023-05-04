@@ -112,11 +112,8 @@ def downloadAttachmentsFrom(imap: mailer, sender: str, extension: str):
                     crashfile = open("/home/pi/wind_data_shr/crash.txt", "w")
                     crashfile.write(str(email))
                     crashfile.close()
-                    try:
-                        logging.error("Email Data is Mostly Likely None Type...Skipping." + str(e.errno) + " - " + os.strerror(e.errno))
-                    except Exception as e:
-                        logging.error("Program Failure, Error Number not recognized")
-                        raise e
+                    logging.error("Email Data is Mostly Likely None Type...Skipping." + str(e.__dict__))
+                    logging.error("Program Failure, Error Number not recognized")
 
 
 
