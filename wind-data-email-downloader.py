@@ -105,7 +105,16 @@ def downloadAttachmentsFrom(imap: mailer, sender: str, extension: str):
                             #imap.imap4.store(emailid, 'FLAGS', '\\Deleted')
                             logging.debug("Email Archived")
                 except AttributeError as e: # email_body is none!
-                    logging.debug("Email Data is Mostly Likely None Type...Skipping." + str(e.errno) + " - " + os.strerror(e.errno))
+                    # Dump email object for debug:
+                    logging.error("Writing email object to crash file...")
+                    if os.path.exists("/home/pi/wind_data_shr/crash.txt"):
+                        os.remove("/home/pi/wind_data_shr/crash.txt")
+                    crashfile = open("/home/pi/wind_data_shr/crash.txt", "w")
+                    crashfile.write(str(email))
+                    crashfile.close()
+                    logging.error("Email Data is Mostly Likely None Type...Skipping." + str(e.__dict__))
+                    logging.error("Program Failure, Error Number not recognized")
+
 
 
 def cleanArchive(imap: mailer):
