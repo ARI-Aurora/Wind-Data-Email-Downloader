@@ -28,6 +28,7 @@ from typing import List # for List return type hints
 import errno
 import zipfile #to perform the unziping!
 import shutil # for moving files around once downloaded
+import pal #for the logging!!
 
 def setupLogging():
     logging.basicConfig(
@@ -142,13 +143,28 @@ def checkEmailForNewLidarData():
     else: 
         logging.error("IMAP was None on creation")
     
+def moveLidarFilesToOwnCloud(filePath: str):
+    logging.debug("Moving file to owncloud: " + filePath)
+    unit = findUnitID(filePath)
+    containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
+    dataPath = os.getenv('OWNCLOUD_DATA_PATH')
+    workingPath = os.getenv('WORKING_DIR')
+    extracted_type = filename.split(".")[-2] # file probably ends in either CSV.ZIP or ZPH.ZIP. this gives the first part
+    shutil.unpack_archive(filePath, workingPath + "temp/" + str(unit))
+    os.system("docker cp " + workingPath + "temp/" + str(unit) + "." + extracted_type + " " containerName + ":" + dataPath + extracted_type + "/" + str(unit) + "/" + filePath)
+    logging.debug(str(unit) + " CSV moved to: " + containerName + ":" + dataPath + "CSV/" + str(unit) + "/" + filePath)
+    os.remove(workingPath + "temp/" + str(unit) + "." + str(unit))
 
-def processDownloadedZIPLidarFile(filePath: str):
-    logging.debug("Processing Download: " + filePath)
-    # Detect Unit Number From Filename
+def findUnitID(filePath: str) -> int:
+        # Detect Unit Number From Filename
     filename = filePath.split("/")[-1]
     unit = filename.split("_")[1].split("@")[0]
     logging.debug("Found UNIT ID: " + str(unit))
+    return unit
+
+def processDownloadedZIPLidarFile(filePath: str):
+    logging.debug("Processing Download: " + filePath)
+    unit = findUnitID(filePath)
     # Check FIle Type and Move accordinly
     extracted_type = filename.split(".")[-2]
     if extracted_type == "CSV":
