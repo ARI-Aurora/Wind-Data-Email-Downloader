@@ -22,7 +22,6 @@ from data_email_client import mailer
 import email # To be able to walk through the email
 from email import message
 import os # To retrieve environment variables
-import logging # Used to create log file! https://docs.python.org/3/library/logging.html, https://docs.python.org/3/howto/logging.html 
 import sys # for standard out stream handler
 from typing import List # for List return type hints
 import errno
@@ -30,182 +29,152 @@ import zipfile #to perform the unziping!
 import shutil # for moving files around once downloaded
 import pal #for the logging!!
 #from dataWorkBench import dataFileWorkBench
-from extractionHandler import extractDownloadedFile
 import fileHandler
 
-def setupLogging():
-    logging.basicConfig(
-        level = logging.DEBUG, 
-        format='%(asctime)s %(levelname)s: %(message)s',
-        handlers = [
-            logging.FileHandler('/root/wded.log'),
-            logging.StreamHandler(sys.stdout)
-        ]
-        )
-    logging.debug("Downloader Initialized")
-
-def createEmailInstance() -> mailer: 
-    ## Create Credentials for the Mail Server
-    server = 'imap.gmail.com' #'outlook.office365.com' # 'imap.gmail.com' for gmail
-    username = "wind@nwtresearch.com"
-    mail_pass = os.getenv('WIND_GMAIL_PASS') # Make sure to export before running
-    try:
-        logging.debug("Attempting to Connect to Email")
-        imap = mailer(server=server, username=username, password=mail_pass)
-        logging.debug("Email connected")
-        return imap
-    except OSError as e:
-        logging.error("Could not connect to Email!")
-        logging.error(str(e.errno) + " - " + os.strerror(e.errno))
-        exit()
-    except:
-        logging.error("Something else went wrong!!")
-
-
-def findInboxWithName(imap: mailer, folderName: str) -> List[str]:
-    data_boxes = [m for m in imap.mailboxes if folderName in m]
-    return data_boxes
-
-def clearDataLabelFromEmail(imap: mailer, emailid: int):
-    archive_folder = os.getenv("EMAIL_ARCHIVE_FOLDER")
-    imap.imap4.store(emailid, '+X-GM-LABELS', archive_folder)
-    imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
-    imap.imap4.expunge()
-    logging.debug("Data label cleared from: " + str(emailid.decode("UTF8")))
-
-def downloadAttachmentFromMessage(imap: mailer, emailid: int) -> str : 
-    out_dir = os.getenv("WDED_WORKING_DIR") + "/data"
-    logging.debug("Inspecting Email ID: " + str(emailid.decode("UTF8")))
-    resp, data = imap.imap4.fetch(emailid, "(RFC822)")
-    labelResp, labelData = imap.imap4.fetch(emailid, '(X-GM-LABELS)')
-    for label in labelData:
-        if("Wind_Archived" in label.decode("utf-8")):
-            logging.debug("Email is already archived, skipping")
-            return "NULL"
-        else:
-            try:
-                email_body = data[0][1] # Make this more informed!!
-                m = email.message_from_bytes(email_body)
-                count = 0
-                for part in m.walk():
-                    logging.debug("Part being Inspectect: " + str(count) + ". Part of type: " + str(part.get_content_maintype()))
-                    count += 1
-                    if(part.get_content_maintype() == "application"):
-                        filename = part.get_filename()
-                        logging.debug("Part has File associated: " + str(filename))
-                        save_path = os.path.join(out_dir, filename)
-                        if not os.path.isfile(save_path):
-                            fp = open(save_path, 'wb')
-                            fp.write(part.get_payload(decode=True))
-                            fp.close()
-                            logging.debug(str(filename) + " saved.")
-                            clearDataLabelFromEmail(imap, emailid)
-                            imap.imap4.expunge()
-                            return save_path
-                        else:
-                            logging.debug(str(filename) + " File Already Downloaded")
-                            clearDataLabelFromEmail(imap, emailid)
-                            imap.imap4.expunge()
-                            return save_path
-            except AttributeError as e: # email_body is none!
-                # Dump email object for debug:
-                logging.error("Writing email object to crash file...")
-                crashFilename = os.getenv("WDED_WORKING_DIR") + "crash.txt"
-                if os.path.exists(crashFilename):
-                    os.remove(crashFilename)
-                crashfile = open(crashFilename, "w")
-                crashfile.write(email.__str__())
-                crashfile.close()
-                logging.error("Email Data is Mostly Likely None Type...Skipping." + str(e.__dict__))
-                logging.error("Program Failure, Error Number not recognized")
-                return "NULL"
-
-def downloadAllAttachmentsFromSender(imap: mailer, sender: str) -> List[str]:
-    data_boxes = findInboxWithName(imap, "Data")
-    imap.search_for_messages(text=sender, area='from', folder=data_boxes)
-    try:
-        print("imap.result[0][0]: ")
-        print(imap.results[0][0])
-    except:
-        print("Could not print imap.results[0][0]")
-
-    try:
-        logging.debug("List of Message ID's: " + str(imap.results[0][1]))
-        msgs = imap.results[0][1]
-        savePaths = []
-        for emailid in msgs:
-            savePaths.append(downloadAttachmentFromMessage(imap, emailid))
-        logging.debug("Downloading from: " + sender + " finished")
-        return savePaths
-    except:
-        print("Could not assing msgs from imap.results[0][1]")
-        return []
+class emailHandler:
+    def __init__(self):
+        self.logger = pal.setupLogging("Email Handler")
+        self.imap = self.createEmailInstance()
     
+    def createEmailInstance(self) -> mailer: 
+        ## Create Credentials for the Mail Server
+        server = 'imap.gmail.com' #'outlook.office365.com' # 'imap.gmail.com' for gmail
+        username = "wind@nwtresearch.com"
+        mail_pass = os.getenv('WIND_GMAIL_PASS') # Make sure to export before running
+        try:
+            self.logger.debug("Attempting to Connect to Email")
+            imap = mailer(server=server, username=username, password=mail_pass)
+            self.logger.debug("Email connected")
+            return imap
+        except OSError as e:
+            self.logger.error("Could not connect to Email!")
+            self.logger.error(str(e.errno) + " - " + os.strerror(e.errno))
+            exit()
+        except:
+            self.logger.error("Something else went wrong!!")
 
-def cleanArchive(imap: mailer): # TODO Will need to also clean the SRA data files!
-    # Clear Inbox
-    logging.info("Cleaning Wind Archive")
-    data_boxes = findInboxWithName(imap, "Wind_Archived")
-    imap.search_for_messages(text='status@support.zephirlidar.com', area='from', folder=data_boxes)
-    msgs = imap.results[0][1]
-    for emailid in msgs:
-        resp, data = imap.imap4.fetch(emailid, "(RFC822)")
-        email_body = data[0][1] # Make this more informed!!
-        m = email.message_from_bytes(email_body)
-        subject = str(email.header.make_header(email.header.decode_header(m['Subject'])))
-        logging.debug("Cleaning email: " + str(emailid.decode("UTF8")) + ": " + str(subject))
-        imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
-        imap.imap4.expunge()
-    logging.info("Archive Cleaned")
 
-def checkEmailForData():
-    imap = createEmailInstance()
-    owncloud = fileHandler.fileHandler()
-    if imap is not None:
-        # TODO Move this definition to another location (SQLite3?)
-        sraSenders = ["447498823060@packet-mail.net"]
-        # ? Extracted File Path should be [CSV (both SRA and Lidar), ZPH (Lidar Only)]
-        # ? Saved File Path should be [ZIP (for Lidars), RLD (for SRA)]
+    def findInboxWithName(self, folderName: str) -> List[str]:
+        data_boxes = [m for m in self.imap.mailboxes if folderName in m]
+        return data_boxes
 
-        savePaths = downloadAllAttachmentsFromSender(imap = imap, sender = 'status@support.zephirlidar.com') # Download the zx300 files
-        # ! Remove: Instead use local file processing!
-        # if not savePaths:
-        #     logging.warning("No savePaths found for Lidar sender, might be no new data")
-        # else:
-        #     for savedFilePath in savePaths:
-        #         if savedFilePath != "NULL":
-        #             extractedFilePath = extractDownloadedFile(savedFilePath)
-        #             owncloud.backupLidarFileToOwnCloud(extractedFilePath)
-        #             owncloud.backupLidarFileToOwnCloud(savedFilePath)
-        #         else:
-        #             logging.error("Saved Filepath was NULL, might be already downloaded")
-        # for sender in sraSenders:
-        #     savePaths = downloadAllAttachmentsFromSender(imap = imap, sender = sender)
-        #     print(savePaths)
-        #     if not savePaths:
-        #         logging.warning("No savePaths found for SRA sender " + sender + ", might be no new data")
-        #     else:
-        #         for savedFilePath in savePaths:
-        #             if savedFilePath != "NULL":
-        #                 #! extractedFilePath = extractDownloadedFile(savedFilePath)
-        #                 #! logging.debug("Extracted SRA Data: " + savedFilePath)
-        #                 owncloud.backupSRAFileToOwnCloud(savedFilePath)
-        imap.imap4.expunge()
-    else: 
-        logging.error("IMAP was None on creation")
+    def clearDataLabelFromEmail(self, emailid: int):
+        archive_folder = os.getenv("EMAIL_ARCHIVE_FOLDER")
+        self.imap.imap4.store(emailid, '+X-GM-LABELS', archive_folder)
+        self.imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
+        self.imap.imap4.expunge()
+        self.logger.debug("Data label cleared from: " + str(emailid.decode("UTF8")))
+
+    def downloadAttachmentFromMessage(self, imap: mailer, emailid: int) -> str : 
+        out_dir = os.getenv("WDED_WORKING_DIR") + "/data"
+        self.logger.debug("Inspecting Email ID: " + str(emailid.decode("UTF8")))
+        resp, data = self.imap.imap4.fetch(emailid, "(RFC822)")
+        labelResp, labelData = self.imap.imap4.fetch(emailid, '(X-GM-LABELS)')
+        for label in labelData:
+            if("Wind_Archived" in label.decode("utf-8")):
+                self.logger.debug("Email is already archived, skipping")
+                return "NULL"
+            else:
+                try:
+                    email_body = data[0][1] # Make this more informed!!
+                    m = email.message_from_bytes(email_body)
+                    count = 0
+                    for part in m.walk():
+                        self.logger.debug("Part being Inspectect: " + str(count) + ". Part of type: " + str(part.get_content_maintype()))
+                        count += 1
+                        if(part.get_content_maintype() == "application"):
+                            filename = part.get_filename()
+                            self.logger.debug("Part has File associated: " + str(filename))
+                            save_path = os.path.join(out_dir, filename)
+                            if not os.path.isfile(save_path):
+                                fp = open(save_path, 'wb')
+                                fp.write(part.get_payload(decode=True))
+                                fp.close()
+                                self.logger.debug(str(filename) + " saved.")
+                                self.clearDataLabelFromEmail(emailid)
+                                self.imap.imap4.expunge()
+                                return save_path
+                            else:
+                                self.logger.debug(str(filename) + " File Already Downloaded")
+                                self.clearDataLabelFromEmail(emailid)
+                                self.imap.imap4.expunge()
+                                return save_path
+                except AttributeError as e: # email_body is none!
+                    # Dump email object for debug:
+                    self.logger.error("Writing email object to crash file...")
+                    crashFilename = os.getenv("WDED_WORKING_DIR") + "crash.txt"
+                    if os.path.exists(crashFilename):
+                        os.remove(crashFilename)
+                    crashfile = open(crashFilename, "w")
+                    crashfile.write(email.__str__())
+                    crashfile.close()
+                    self.logger.error("Email Data is Mostly Likely None Type...Skipping." + str(e.__dict__))
+                    self.logger.error("Program Failure, Error Number not recognized")
+                    return "NULL"
+
+    def downloadAllAttachmentsFromSender(self, sender: str) -> List[str]:
+        data_boxes = self.findInboxWithName("Data")
+        self.imap.search_for_messages(text=sender, area='from', folder=data_boxes)
+        try:
+            print("imap.result[0][0]: ")
+            print(self.imap.results[0][0])
+        except:
+            print("Could not print imap.results[0][0]")
+
+        try:
+            self.logger.debug("List of Message ID's: " + str(self.imap.results[0][1]))
+            msgs = self.imap.results[0][1]
+            savePaths = []
+            for emailid in msgs:
+                savePaths.append(self.downloadAttachmentFromMessage(self.imap, emailid))
+            self.logger.debug("Downloading from: " + sender + " finished")
+            return savePaths
+        except:
+            print("Could not assing msgs from imap.results[0][1]")
+            return []
+        
+
+    def cleanArchive(self): # TODO Will need to also clean the SRA data files!
+        self.logger.info("Cleaning Wind Archive")
+        data_boxes = self.findInboxWithName("Wind_Archived")
+        senders = ['status@support.zephirlidar.com', '447498823060@packet-mail.net']
+        for sender in senders:
+            self.imap.search_for_messages(text=sender, area='from', folder=data_boxes)
+            try:
+                msgs = self.imap.results[0][1]
+                for emailid in msgs:
+                    resp, data = self.imap.imap4.fetch(emailid, "(RFC822)")
+                    email_body = data[0][1] # Make this more informed!!
+                    m = email.message_from_bytes(email_body)
+                    subject = str(email.header.make_header(email.header.decode_header(m['Subject'])))
+                    self.logger.debug("Cleaning email: " + str(emailid.decode("UTF8")) + ": " + str(subject))
+                    self.imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
+                    self.imap.imap4.expunge()
+                self.logger.info("Archive Cleaned")
+            except:
+                self.logger.error("Could Not Clean Archive for " + sender + " -> Might not be any messages there")
+
+    def checkEmailForData(self):
+        owncloud = fileHandler.fileHandler()
+        if self.imap is not None:
+            # TODO Move this definition to another location (SQLite3?)
+            sraSenders = ["447498823060@packet-mail.net"]
+            # ? Extracted File Path should be [CSV (both SRA and Lidar), ZPH (Lidar Only)]
+            # ? Saved File Path should be [ZIP (for Lidars), RLD (for SRA)]
+            savePaths = self.downloadAllAttachmentsFromSender(sender = 'status@support.zephirlidar.com') # Download the zx300 files
+            for sender in sraSenders:
+                self.downloadAllAttachmentsFromSender(sender = sender)
+            self.imap.imap4.expunge()
+        else: 
+            self.logger.error("IMAP was None on creation")
 
 def main():
-    setupLogging()
-    checkEmailForData()
+    email = emailHandler()
+    email.checkEmailForData()
     # Process Local Data Folder only
     owncloud = fileHandler.fileHandler()
     owncloud.processLocalFolder()
-    cleanArchive(createEmailInstance()) # Clean Archive is going to become expensive as emails pile up!
-
-
-
-    # ? Test Extraction Only!
-    # !extractDownloadedFile("data/011359_2023-05-21_00.00_000316.rld") #! Does not work for SRA files (*.rld)!!
+    email.cleanArchive() # Clean Archive is going to become expensive as emails pile up!
 
     # ? Test Backup Only!
     #owncloud = fileHandler.fileHandler()

@@ -1,12 +1,13 @@
 
 import pal #for the logging!
-from extractionHandler import findLidarUnitID, findSRAUnitID, extractDownloadedFile
+import extractionHandler
 import os # To get environment variables
 import glob
 
 class fileHandler:
     def __init__(self):
         self.logger = pal.setupLogging("fileHandler")
+        self.extractor = extractionHandler.extractionHandler()
         pass
 
     # Move tool if user knows all the details!
@@ -26,7 +27,7 @@ class fileHandler:
         if fileType in ["CSV", "ZPH", "zip", "ZIP"]:
             if fileType == "zip":
                 fileType = "ZIP"
-            unit = findLidarUnitID(filePath)
+            unit = extractor.findLidarUnitID(filePath)
             targetPath = dataPath + fileType + "/" + unit + "/" + filename
             self.moveFileToContainer(filePath, targetPath, containerName)
         else:
@@ -36,13 +37,12 @@ class fileHandler:
         containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
         dataPath = os.getenv('OWNCLOUD_DATA_PATH')
         workingPath = os.getenv('WDED_WORKING_DIR')
-
         filename = filePath.split('/')[-1]
         fileType = filename.split(".")[-1]
         if fileType in ["rld", "RLD", "CSV"]:
             if fileType == "rld":
                 fileType = "RLD"
-            unit = findSRAUnitID(filePath)
+            unit = extractor.findSRAUnitID(filePath)
             targetPath = dataPath + fileType + "/" + unit + "/" + filename
             self.moveFileToContainer(filePath, targetPath, containerName)
         else:
@@ -50,6 +50,7 @@ class fileHandler:
 
     def processLocalFolder(self):
         workingPath = os.getenv('WDED_WORKING_DIR')
+        extractor = extractionHandler.extractionHandler()
         for filePath in glob.glob(workingPath+"data/*.RLD"):
             print(filePath)
         for filePath in glob.glob(workingPath+"data/*.rld"):
@@ -57,7 +58,7 @@ class fileHandler:
             self.backupSRAFileToOwnCloud(filePath)
         for filePath in glob.glob(workingPath+"data/*.zip"):
             print(filePath)
-            extractDownloadedFile(filePath)
+            extractor.extractDownloadedFile(filePath)
         for filePath in glob.glob(workingPath+"temp/*/*.CSV"):
             print(filePath)
             self.backupLidarFileToOwnCloud(filePath)
