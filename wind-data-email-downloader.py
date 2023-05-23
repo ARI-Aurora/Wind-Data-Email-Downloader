@@ -31,6 +31,7 @@ import shutil # for moving files around once downloaded
 import pal #for the logging!!
 #from dataWorkBench import dataFileWorkBench
 from extractionHandler import extractDownloadedFile
+import fileHandler
 
 def setupLogging():
     logging.basicConfig(
@@ -159,6 +160,7 @@ def cleanArchive(imap: mailer): # TODO Will need to also clean the SRA data file
 
 def checkEmailForData():
     imap = createEmailInstance()
+    owncloud = fileHandler.fileHandler()
     if imap is not None:
         # TODO Move this definition to another location (SQLite3?)
         sraSenders = ["447498823060@packet-mail.net"]
@@ -166,36 +168,48 @@ def checkEmailForData():
         # ? Saved File Path should be [ZIP (for Lidars), RLD (for SRA)]
 
         savePaths = downloadAllAttachmentsFromSender(imap = imap, sender = 'status@support.zephirlidar.com') # Download the zx300 files
-        if not savePaths:
-            logging.warning("No savePaths found for Lidar sender, might be no new data")
-        else:
-            for savedFilePath in savePaths:
-                if savedFilePath is not "NULL":
-                    extractedFilePath = extractDownloadedFile(savedFilePath)
-                    #!backupLidarFileToOwnCloud(extractedFilePath)
-                    #!backupLidarFileToOwnCloud(savedFilePath)
-                else:
-                    logging.error("Saved Filepath was NULL, might be already downloaded")
-        for sender in sraSenders:
-            savePaths = downloadAllAttachmentsFromSender(imap = imap, sender = sender)
-            print(savePaths)
-            if not savePaths:
-                logging.warning("No savePaths found for SRA sender " + sender + ", might be no new data")
-            else:
-                for savedFilePath in savePaths:
-                    if savedFilePath != "NULL":
-                        extractedFilePath = extractDownloadedFile(savedFilePath)
-                        logging.debug("Extracted SRA Data: " + savedFilePath)
-                        #!backupSRAFileToOwnCloud()
+        # ! Remove: Instead use local file processing!
+        # if not savePaths:
+        #     logging.warning("No savePaths found for Lidar sender, might be no new data")
+        # else:
+        #     for savedFilePath in savePaths:
+        #         if savedFilePath != "NULL":
+        #             extractedFilePath = extractDownloadedFile(savedFilePath)
+        #             owncloud.backupLidarFileToOwnCloud(extractedFilePath)
+        #             owncloud.backupLidarFileToOwnCloud(savedFilePath)
+        #         else:
+        #             logging.error("Saved Filepath was NULL, might be already downloaded")
+        # for sender in sraSenders:
+        #     savePaths = downloadAllAttachmentsFromSender(imap = imap, sender = sender)
+        #     print(savePaths)
+        #     if not savePaths:
+        #         logging.warning("No savePaths found for SRA sender " + sender + ", might be no new data")
+        #     else:
+        #         for savedFilePath in savePaths:
+        #             if savedFilePath != "NULL":
+        #                 #! extractedFilePath = extractDownloadedFile(savedFilePath)
+        #                 #! logging.debug("Extracted SRA Data: " + savedFilePath)
+        #                 owncloud.backupSRAFileToOwnCloud(savedFilePath)
         imap.imap4.expunge()
     else: 
         logging.error("IMAP was None on creation")
 
-
 def main():
     setupLogging()
     checkEmailForData()
-    #cleanArchive(createEmailInstance()) # Clean Archive is going to become expensive as emails pile up!
+    # Process Local Data Folder only
+    owncloud = fileHandler.fileHandler()
+    owncloud.processLocalFolder()
+    cleanArchive(createEmailInstance()) # Clean Archive is going to become expensive as emails pile up!
+
+
+
+    # ? Test Extraction Only!
+    # !extractDownloadedFile("data/011359_2023-05-21_00.00_000316.rld") #! Does not work for SRA files (*.rld)!!
+
+    # ? Test Backup Only!
+    #owncloud = fileHandler.fileHandler()
+    #owncloud.backupSRAFileToOwnCloud("data/011359_2023-05-21_07.30_000317.rld")
 
 if __name__ == "__main__":
     main()
