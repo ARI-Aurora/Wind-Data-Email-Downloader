@@ -1,4 +1,6 @@
 temp/
+data/
+crash.txt
 
 
 # Byte-compiled / optimized / DLL files

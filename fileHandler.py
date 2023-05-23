@@ -1,38 +1,43 @@
 
 import pal #for the logging!
+from extractionHander import findLidarUnitID, findSRAUnitID
 
 class fileHandler:
     def __init__():
         self.logger = pal.setupLogging("fileHandler")
         pass
 
-    def moveCSVToOwnCloud(filePath: str):
-        self.logger.debug("Moving CSV: " + filePath)
+    # Move tool if user knows all the details!
+    def moveFileToContainer(sourceFilePath: str, targetFilePath:str, containerName:str):
+        os.system("docker cp " + sourceFilePath + " " + containerName + ":" + targetFilePath)
+        self.logger("Moved file to: " + containerName)
+
+    # Move tool with autofile sorting.
+    def backupLidarFileToOwnCloud(filePath: str):
+        containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
+        dataPath = os.getenv('OWNCLOUD_DATA_PATH')
+        workingPath = os.getenv('WDED_WORKING_DIR')
         filename = filePath.split('/')[-1]
-
-
-    unit = findUnitID(filePath) # Maybe make utils??
-    containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
-    dataPath = os.getenv('OWNCLOUD_DATA_PATH')
-    workingPath = os.getenv('WDED_WORKING_DIR')
-    extracted_type = filename.split(".")[-2] # file probably ends in either CSV.ZIP or ZPH.ZIP. this gives the first part
-    shutil.unpack_archive(filePath, workingPath + "temp/" + str(unit))
-    os.system("docker cp " + workingPath + "temp/" + str(unit) + "." + extracted_type + " " containerName + ":" + dataPath + extracted_type + "/" + str(unit) + "/" + filePath)
-    logging.debug(str(unit) + " CSV moved to: " + containerName + ":" + dataPath + "CSV/" + str(unit) + "/" + filePath)
-    os.remove(workingPath + "temp/" + str(unit) + "." + str(unit))
-
-
-
-
-        pass
-
-    def moveZPHToOwnCloud():
-        pass
-
-    def moveZIPToOwnCloud():
-        pass
-
-    def moveRLDToOwnCloud():
-        pass
-
+        fileType = filename.split(".")[-1]
+        if fileType in ["CSV", "ZPH", "ZIP"]:
+            unit = findLidarUnitID(filePath)
+            targetPath = dataPath + fileType + "/" + unit + "/" + filename
+            moveFileToContainer(filePath, targetPath, containerName)
+            # TODO Remove files from machine?
+        else:
+            self.logger("File type did not match any expected options for Lidar [CSV, ZPH, ZIP]")
     
+    def backupSRAFileToOwnCloud(filePath: str):
+        containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
+        dataPath = os.getenv('OWNCLOUD_DATA_PATH')
+        workingPath = os.getenv('WDED_WORKING_DIR')
+
+        filename = filePath.split('/')[-1]
+        fileType = filename.split(".")[-1]
+        if fileType in ["rld", "CSV"]:
+            unit = findSRAUnitID(filePath)
+            targetPath = dataPath + fileType + "/" + unit + "/" + filename
+            moveFileToContainer(filePath, targetPath, containerName)
+            # TODO Remove files from machine?
+        else:
+            self.Logger("File type did not match any expected options for SRA [CSV, rld]")

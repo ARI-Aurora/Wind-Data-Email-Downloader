@@ -4,7 +4,7 @@ import sys
 def setupLogging(name: str) -> logging.Logger:
     pal = logging.getLogger(name)
     pal.setLevel(logging.DEBUG)
-    logFile = logging.FileHandler('wded.log')
+    logFile = logging.FileHandler('/root/wded.log')
     logFile.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s'))
     consoleLog = logging.StreamHandler(sys.stdout)
     consoleLog.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(name)s: %(message)s'))

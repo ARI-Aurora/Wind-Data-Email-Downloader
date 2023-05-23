@@ -13,10 +13,15 @@ A tool to download ZX300, SymphoniePRO, and Environment Canada Data for Analysis
 
 ```0 5 * * * /home/pi/Documents/setup-downloader-and-run.sh python3 /home/pi/wind-data-downloader/data-email-downloader-test.py >> /home/pi/cron_output.log 2>&1```
 
-# Next Steps
+# Dependencies
 
-## Docker? Containerize?
-- Create a basic compose file
-- Load python script
-- install samba
-- load the samba config file
+This program is intended to run on a machine hosting a owncloud instance via docker.
+
+## Packages
+- pip3
+- data_email_client
+- nrgpy ``https://github.com/nrgpy/nrgpy``
+
+## Environment Variables
+
+- WIND_GMAIL_PASS: App Password for the gmail account recieving the data emails
