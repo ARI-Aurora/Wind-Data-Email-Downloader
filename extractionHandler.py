@@ -11,15 +11,15 @@ class extractionHandler:
     def extractDownloadedFile(self, sourceFilePath: str) -> str:
         workingPath = os.getenv('WDED_WORKING_DIR')
         extractedDir = workingPath + "temp/"
-        filename = filePath.split('/')[-1]
+        filename = sourceFilePath.split('/')[-1]
         print(sourceFilePath)
         extracted_type = sourceFilePath.split(".")[-2] # ? Should only return a usable value for the lidars, garbage for the SRAs
         if extracted_type in ["ZPH", "CSV"]:
-            unit = findLidarUnitID(sourceFilePath)
+            unit = self.findLidarUnitID(sourceFilePath)
             shutil.unpack_archive(sourceFilePath, extractedDir + str(unit))
             self.logger.debug("Unpacked " + sourceFilePath)
         elif extracted_type in ["rld", "RLD"]:
-            unit = findSRAUnitID(sourceFilePath)
+            unit = self.findSRAUnitID(sourceFilePath)
             client_id = os.getenv("NRG_CLIENT_ID")
             client_secret = os.getenv("NRG_CLIENT_SECRET")
             converter = nrgpy.cloud_convert(

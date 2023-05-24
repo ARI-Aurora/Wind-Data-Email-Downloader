@@ -8,7 +8,6 @@ class fileHandler:
     def __init__(self):
         self.logger = pal.setupLogging("fileHandler")
         self.extractor = extractionHandler.extractionHandler()
-        pass
 
     # Move tool if user knows all the details!
     def moveFileToContainer(self,sourceFilePath: str, targetFilePath:str, containerName:str):
@@ -27,7 +26,7 @@ class fileHandler:
         if fileType in ["CSV", "ZPH", "zip", "ZIP"]:
             if fileType == "zip":
                 fileType = "ZIP"
-            unit = extractor.findLidarUnitID(filePath)
+            unit = self.extractor.findLidarUnitID(filePath)
             targetPath = dataPath + fileType + "/" + unit + "/" + filename
             self.moveFileToContainer(filePath, targetPath, containerName)
         else:
@@ -42,7 +41,7 @@ class fileHandler:
         if fileType in ["rld", "RLD", "CSV"]:
             if fileType == "rld":
                 fileType = "RLD"
-            unit = extractor.findSRAUnitID(filePath)
+            unit = self.extractor.findSRAUnitID(filePath)
             targetPath = dataPath + fileType + "/" + unit + "/" + filename
             self.moveFileToContainer(filePath, targetPath, containerName)
         else:
@@ -50,7 +49,6 @@ class fileHandler:
 
     def processLocalFolder(self):
         workingPath = os.getenv('WDED_WORKING_DIR')
-        extractor = extractionHandler.extractionHandler()
         for filePath in glob.glob(workingPath+"data/*.RLD"):
             print(filePath)
         for filePath in glob.glob(workingPath+"data/*.rld"):
@@ -58,7 +56,7 @@ class fileHandler:
             self.backupSRAFileToOwnCloud(filePath)
         for filePath in glob.glob(workingPath+"data/*.zip"):
             print(filePath)
-            extractor.extractDownloadedFile(filePath)
+            self.extractor.extractDownloadedFile(filePath)
         for filePath in glob.glob(workingPath+"temp/*/*.CSV"):
             print(filePath)
             self.backupLidarFileToOwnCloud(filePath)

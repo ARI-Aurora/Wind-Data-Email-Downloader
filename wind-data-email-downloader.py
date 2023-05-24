@@ -155,7 +155,6 @@ class emailHandler:
                 self.logger.error("Could Not Clean Archive for " + sender + " -> Might not be any messages there")
 
     def checkEmailForData(self):
-        owncloud = fileHandler.fileHandler()
         if self.imap is not None:
             # TODO Move this definition to another location (SQLite3?)
             sraSenders = ["447498823060@packet-mail.net"]
