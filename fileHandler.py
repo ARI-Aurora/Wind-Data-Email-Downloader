@@ -57,6 +57,7 @@ class fileHandler:
         for filePath in glob.glob(workingPath+"data/*.zip"):
             print(filePath)
             self.extractor.extractDownloadedFile(filePath)
+            self.backupLidarFileToOwnCloud(filePath)
         for filePath in glob.glob(workingPath+"temp/*/*.CSV"):
             print(filePath)
             self.backupLidarFileToOwnCloud(filePath)
