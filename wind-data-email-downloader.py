@@ -34,8 +34,9 @@ import fileHandler
 class emailHandler:
     def __init__(self):
         self.logger = pal.setupLogging("Email Handler")
+        self.logger.info(" ###### WDED SESSION START #####")
         self.imap = self.createEmailInstance()
-    
+
     def createEmailInstance(self) -> mailer: 
         ## Create Credentials for the Mail Server
         server = 'imap.gmail.com' #'outlook.office365.com' # 'imap.gmail.com' for gmail
@@ -80,7 +81,7 @@ class emailHandler:
                     m = email.message_from_bytes(email_body)
                     count = 0
                     for part in m.walk():
-                        self.logger.debug("Part being Inspectect: " + str(count) + ". Part of type: " + str(part.get_content_maintype()))
+                        self.logger.info("Part being Inspectect: " + str(count) + ". Part of type: " + str(part.get_content_maintype()))
                         count += 1
                         if(part.get_content_maintype() == "application"):
                             filename = part.get_filename()
@@ -106,7 +107,7 @@ class emailHandler:
                     if os.path.exists(crashFilename):
                         os.remove(crashFilename)
                     crashfile = open(crashFilename, "w")
-                    crashfile.write(email.__str__())
+                    crashfile.write(m.__str__())
                     crashfile.close()
                     self.logger.error("Email Data is Mostly Likely None Type...Skipping." + str(e.__dict__))
                     self.logger.error("Program Failure, Error Number not recognized")
@@ -116,10 +117,9 @@ class emailHandler:
         data_boxes = self.findInboxWithName("Data")
         self.imap.search_for_messages(text=sender, area='from', folder=data_boxes)
         try:
-            print("imap.result[0][0]: ")
-            print(self.imap.results[0][0])
+            self.logger.debug("imap.result[0][0]: " + str(self.imap.results[0][0]))
         except:
-            print("Could not print imap.results[0][0]")
+            self.logger.error("Could not print imap.results[0][0]")
 
         try:
             self.logger.debug("List of Message ID's: " + str(self.imap.results[0][1]))
@@ -130,7 +130,7 @@ class emailHandler:
             self.logger.debug("Downloading from: " + sender + " finished")
             return savePaths
         except:
-            print("Could not assing msgs from imap.results[0][1]")
+            self.logger.error("Could not assing msgs from imap.results[0][1]")
             return []
         
 
