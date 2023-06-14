@@ -13,12 +13,10 @@ class fileHandler:
     def moveFileToContainer(self,sourceFilePath: str, targetFilePath:str, containerName:str):
         os.system("docker cp " + sourceFilePath + " " + containerName + ":" + targetFilePath)
         self.logger.debug("Moved file to: " + containerName)
-        os.system("docker exec " + containerName + " /bin/bash /root/refresh.sh") # ! If this fails, os will still remove the file!!
         os.remove(sourceFilePath)
 
     # Move tool with autofile sorting.
-    def backupLidarFileToOwnCloud(self,filePath: str):
-        containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
+    def backupLidarFileToOwnCloud(self,filePath: str, containerName:str):
         dataPath = os.getenv('OWNCLOUD_DATA_PATH')
         workingPath = os.getenv('WDED_WORKING_DIR')
         filename = filePath.split('/')[-1]
@@ -32,8 +30,7 @@ class fileHandler:
         else:
             self.logger.debug("File type did not match any expected options for Lidar [CSV, ZPH, ZIP]")
     
-    def backupSRAFileToOwnCloud(self,filePath: str):
-        containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
+    def backupSRAFileToOwnCloud(self,filePath: str, containerName:str):
         dataPath = os.getenv('OWNCLOUD_DATA_PATH')
         workingPath = os.getenv('WDED_WORKING_DIR')
         filename = filePath.split('/')[-1]
@@ -48,19 +45,21 @@ class fileHandler:
             self.logger.debug("File type did not match any expected options for SRA [CSV, rld]")
 
     def processLocalFolder(self):
+        containerName = os.getenv('OWNCLOUD_CONTAINER_NAME') # Make sure to export before running
         workingPath = os.getenv('WDED_WORKING_DIR')
         for filePath in glob.glob(workingPath+"data/*.RLD"):
             print(filePath)
         for filePath in glob.glob(workingPath+"data/*.rld"):
             print(filePath)
-            self.backupSRAFileToOwnCloud(filePath)
+            self.backupSRAFileToOwnCloud(filePath, containerName)
         for filePath in glob.glob(workingPath+"data/*.zip"):
             print(filePath)
             self.extractor.extractDownloadedFile(filePath)
-            self.backupLidarFileToOwnCloud(filePath)
+            self.backupLidarFileToOwnCloud(filePath, containerName)
         for filePath in glob.glob(workingPath+"temp/*/*.CSV"):
             print(filePath)
-            self.backupLidarFileToOwnCloud(filePath)
+            self.backupLidarFileToOwnCloud(filePath, containerName)
         for filePath in glob.glob(workingPath+"temp/*/*.ZPH"):
             print(filePath)
-            self.backupLidarFileToOwnCloud(filePath)
+            self.backupLidarFileToOwnCloud(filePath, containerName)
+        os.system("docker exec " + containerName + " /bin/bash /root/refresh.sh")
