@@ -63,7 +63,6 @@ class emailHandler:
         archive_folder = os.getenv("EMAIL_ARCHIVE_FOLDER")
         self.imap.imap4.store(emailid, '+X-GM-LABELS', archive_folder)
         self.imap.imap4.store(emailid, '-X-GM-LABELS', '(Data)')
-        self.imap.imap4.expunge()
         self.logger.debug("Data label cleared from: " + str(emailid.decode("UTF8")))
 
     def downloadAttachmentFromMessage(self, imap: mailer, emailid: int) -> str : 
@@ -92,13 +91,9 @@ class emailHandler:
                                 fp.write(part.get_payload(decode=True))
                                 fp.close()
                                 self.logger.debug(str(filename) + " saved.")
-                                self.clearDataLabelFromEmail(emailid)
-                                self.imap.imap4.expunge()
                                 return save_path
                             else:
                                 self.logger.debug(str(filename) + " File Already Downloaded")
-                                self.clearDataLabelFromEmail(emailid)
-                                self.imap.imap4.expunge()
                                 return save_path
                 except AttributeError as e: # email_body is none!
                     # Dump email object for debug:
@@ -128,6 +123,11 @@ class emailHandler:
             for emailid in msgs:
                 savePaths.append(self.downloadAttachmentFromMessage(self.imap, emailid))
             self.logger.debug("Downloading from: " + sender + " finished")
+            for emailid in msgs:
+                self.clearDataLabelFromEmail(emailid)
+                self.logger.debug("Completed Clearing Data Labels for " + sender)
+                self.imap.imap4.expunge()
+                self.logger.debug("IMAP Expunged")
             return savePaths
         except:
             self.logger.error("Could not assing msgs from imap.results[0][1]")
