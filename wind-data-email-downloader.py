@@ -137,7 +137,7 @@ class emailHandler:
     def cleanArchive(self): # TODO Will need to also clean the SRA data files!
         self.logger.info("Cleaning Wind Archive")
         data_boxes = self.findInboxWithName("Wind_Archived")
-        senders = ['status@support.zephirlidar.com', '447498823060@packet-mail.net']
+        senders = ['447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
         for sender in senders:
             self.imap.search_for_messages(text=sender, area='from', folder=data_boxes)
             try:
