@@ -157,11 +157,8 @@ class emailHandler:
     def checkEmailForData(self):
         if self.imap is not None:
             # TODO Move this definition to another location (SQLite3?)
-            sraSenders = ["447498823060@packet-mail.net"]
-            # ? Extracted File Path should be [CSV (both SRA and Lidar), ZPH (Lidar Only)]
-            # ? Saved File Path should be [ZIP (for Lidars), RLD (for SRA)]
-            savePaths = self.downloadAllAttachmentsFromSender(sender = 'status@support.zephirlidar.com') # Download the zx300 files
-            for sender in sraSenders:
+            expectedSenders = ['447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
+            for sender in expectedSenders:
                 self.downloadAllAttachmentsFromSender(sender = sender)
             self.imap.imap4.expunge()
         else: 
