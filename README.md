@@ -39,3 +39,9 @@ This program is intended to run on a machine hosting a owncloud instance via doc
 - NRG_CLIENT_ID: ID provided by NRG Systems for using their API.
 - NRG_CLIENT_SECRET: Secret Key provided by NRG Systems for using their API
 
+## List of Device Emails
+
+- 447498823060@packet-mail.net - SRA Yellow
+- 870772910840@packet-mail.net - SRA Green
+- status@support.zephirlidar.com - Older Lidar Units (983)
+- status@support.zxlidars.com - New Lidar Units (1320, 1322, 1811)

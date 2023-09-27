@@ -137,7 +137,7 @@ class emailHandler:
     def cleanArchive(self): # TODO Will need to also clean the SRA data files!
         self.logger.info("Cleaning Wind Archive")
         data_boxes = self.findInboxWithName("Wind_Archived")
-        senders = ['447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
+        senders = ['870772910840@packet-mail.net', '447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
         for sender in senders:
             self.imap.search_for_messages(text=sender, area='from', folder=data_boxes)
             try:
@@ -157,7 +157,7 @@ class emailHandler:
     def checkEmailForData(self):
         if self.imap is not None:
             # TODO Move this definition to another location (SQLite3?)
-            expectedSenders = ['447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
+            expectedSenders = ['870772910840@packet-mail.net', '447498823060@packet-mail.net', 'status@support.zephirlidar.com', 'status@support.zxlidars.com']
             for sender in expectedSenders:
                 self.downloadAllAttachmentsFromSender(sender = sender)
             self.imap.imap4.expunge()
